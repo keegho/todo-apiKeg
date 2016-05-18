@@ -42,6 +42,7 @@ app.get('/todos/:id', function (req, res) {
 
 app.post('/todos', function (req, res) {
 	//var body = req.body;
+	//Pick what data you need not junk data a hacker can indent
 	var body = _.pick(req.body, 'description', 'completed');
 
 	if(!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
@@ -55,6 +56,20 @@ app.post('/todos', function (req, res) {
 
 	//res.json(body);
 	res.send('New item added.');
+});
+
+app.delete('/todos/:id', function (req, res) {
+	var todoId = parseInt(req.params.id, 10);
+	var matchedTodo = _.findWhere(todos, {id: todoId});
+
+	if(!matchedTodo) {
+		res.status(404).json({"Error": "No todo found with that ID"});
+
+	} else {
+
+		todos = _.without(todos, matchedTodo);
+		res.json({"Deleted": "Item deleted"});
+	}
 });
 
 app.listen(port, function (){
