@@ -15,9 +15,32 @@ app.get('/', function (req, res) {
 	res.send('Todo api root is working!');
 });
 
+// /todos?completed=true&q=keg
 app.get('/todos', function (req, res) {
-	res.json(todos);
-})
+	var queryPrams = req.query;
+	var filteredTodos = todos;
+
+
+	// Query by true or false
+	if(queryPrams.hasOwnProperty('completed') && queryPrams.completed === 'true') {
+	filteredTodos = _.where(filteredTodos, {completed: true});
+
+	} else if(queryPrams.hasOwnProperty('completed') && queryPrams.completed === 'false') {
+		filteredTodos = _.where(filteredTodos, {completed: false});
+	}
+
+	// Query by description
+	if(queryPrams.hasOwnProperty('q') && queryPrams.q.length > 0) {
+		filteredTodos = _.filter(filteredTodos, function (filtered) {
+			return filtered.description.toLowerCase().indexOf(queryPrams.q.toLowerCase()) > -1; 
+		});
+	}
+	// } else if() {
+	// 	filteredTodos = _.filter(filteredTodos, function (fil))
+	// }
+
+	res.json(filteredTodos);
+});
 
 app.get('/todos/:id', function (req, res) {
 	var todoId = parseInt(req.params.id, 10);
