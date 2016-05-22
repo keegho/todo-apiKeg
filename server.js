@@ -36,9 +36,9 @@ app.get('/todos', function(req, res) {
 		where: where
 	}).then(function(todos) {
 		if (todos) {
-			//todos.forEach(function(todo) {
+
 			res.json(todos);
-			//});
+
 
 		} else {
 			res.status(404).json({
@@ -50,30 +50,6 @@ app.get('/todos', function(req, res) {
 		res.status(500).json(e);
 	});
 
-	// var filteredTodos = todos;
-
-
-	// // Query by true or false
-	// if (queryPrams.hasOwnProperty('completed') && queryPrams.completed === 'true') {
-	// 	filteredTodos = _.where(filteredTodos, {
-	// 		completed: true
-	// 	});
-
-	// } else if (queryPrams.hasOwnProperty('completed') && queryPrams.completed === 'false') {
-	// 	filteredTodos = _.where(filteredTodos, {
-	// 		completed: false
-	// 	});
-	// }
-
-	// // Query by description
-	// if (queryPrams.hasOwnProperty('q') && queryPrams.q.length > 0) {
-	// 	filteredTodos = _.filter(filteredTodos, function(filtered) {
-	// 		return filtered.description.toLowerCase().indexOf(queryPrams.q.toLowerCase()) > -1;
-	// 	});
-	// }
-
-
-	//res.json(filteredTodos);
 });
 
 app.get('/todos/:id', function(req, res) {
@@ -91,112 +67,74 @@ app.get('/todos/:id', function(req, res) {
 	}).catch(function(e) {
 		res.status(500).json(e);
 	});
-	// var matchedTodo = _.findWhere(todos, {
-	// 	id: todoId
-	// });
-
-
-
-	// if (matchedTodo) {
-	// 	res.json(matchedTodo);
-	// } else {
-	// 	res.status(404).send();
-	// }
 
 });
 
 app.post('/todos', function(req, res) {
-	//var body = req.body;
 	//Pick what data you need not junk data a hacker can indent
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-			res.json(todo.toJSON());
-			//res.json({
-			//		"Added": "Item added sucessfully to db"
-			//	});
-		}).catch(function(e) {
-			res.status(400).json(e);
-		})
-		// if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-		// 	return res.status(400).send();
-		// }
+		res.json(todo.toJSON());
 
-	// body.description = body.description.trim();
+	}).catch(function(e) {
+		res.status(400).json(e);
+	})
 
-	// body.id = nextTodoId++;
-	// todos.push(body);
-
-	// //res.json(body);
-	// res.send('New item added.');
 });
 
 app.delete('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 
 	db.todo.destroy({
-			where: {
-				id: todoId
-			}
-		}).then(function(dtodo) {
+		where: {
+			id: todoId
+		}
+	}).then(function(dtodo) {
 
-			if (dtodo === 0) {
-				res.status(404).json({
-					error: 'Non found to be deleted'
-				});
-			} else {
-				res.status(204).send();
-			}
+		if (dtodo === 0) {
+			res.status(404).json({
+				error: 'Non found to be deleted'
+			});
+		} else {
+			res.status(204).send();
+		}
 
-		}).catch(function(e) {
-			res.status(500).send(e);
-		})
-		// var matchedTodo = _.findWhere(todos, {
-		// 	id: todoId
-		// });
+	}).catch(function(e) {
+		res.status(500).send(e);
+	})
 
-	// if (!matchedTodo) {
-	// 	res.status(404).json({
-	// 		"Error": "No todo found with that ID"
-	// 	});
-
-	// } else {
-
-	// 	todos = _.without(todos, matchedTodo);
-	// 	res.json({
-	// 		"Deleted": "Item deleted"
-	// 	});
-	// }
 });
 
 app.put('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
-	});
 	var body = _.pick(req.body, 'description', 'completed');
-	var validatedAttributes = {};
+	var attributes = {};
 
-	if (!matchedTodo) {
-		return res.status(404).send();
+
+	if (body.hasOwnProperty('completed')) {
+		attributes.completed = body.completed;
 	}
 
-	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-		validatedAttributes.completed = body.completed;
-	} else if (body.hasOwnProperty('completed')) {
-		return res.status(400).send();
+	if (body.hasOwnProperty('description')) {
+		attributes.description = body.description;
 	}
 
-	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-		validatedAttributes.description = body.description;
-	} else if (body.hasOwnProperty('description')) {
-		return res.status(400).send();
-	}
-
-	_.extend(matchedTodo, validatedAttributes);
-	res.json({
-		"Update": "completed sucessfully"
-	});
+	db.todo.findById(todoId).then(function(todo) {
+		if (todo) {
+			todo.update(attributes).then(function(todo) {
+				res.json(todo.toJSON());
+			}, function(e) {
+				res.status(400).json(e);
+			})
+		} else {
+			res.status(404).json({
+				error: 'data not found'
+			})
+		}
+	}, function() {
+		res.status(500).send();
+	})
 });
 
 db.sequelize.sync().then(function() {
