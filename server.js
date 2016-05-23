@@ -142,13 +142,13 @@ app.post('/users', function(req, res){
 	var body = _.pick(req.body, 'email','password');
 
 	db.user.create(body).then(function (user) {
-		res.status(201).json(user.toJSON())
+		res.status(201).json(user.toPublicJSON())
 	}).catch(function (e) {
 		res.status(400).json(e);
 	});
 });
 
-db.sequelize.sync().then(function() {
+db.sequelize.sync(/*{force: true}*/).then(function() {
 
 	app.listen(port, function() {
 		console.log('Server listeining on port ' + port + '...');
