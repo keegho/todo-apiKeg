@@ -6,8 +6,8 @@ var db = require('./db.js');
 
 var port = process.env.PORT || 3000;
 
-var todos = [];
-var nextTodoId = 1;
+// var todos = [];
+// var nextTodoId = 1;
 
 //Used as middlewear
 app.use(bodyParser.json());
@@ -75,7 +75,8 @@ app.post('/todos', function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-		res.json(todo.toJSON());
+		//res.json(todo.toJSON());
+		res.status(201).json(todo.toJSON());
 
 	}).catch(function(e) {
 		res.status(400).json(e);
@@ -134,7 +135,17 @@ app.put('/todos/:id', function(req, res) {
 		}
 	}, function() {
 		res.status(500).send();
-	})
+	});
+});
+
+app.post('/users', function(req, res){
+	var body = _.pick(req.body, 'email','password');
+
+	db.user.create(body).then(function (user) {
+		res.status(201).json(user.toJSON())
+	}).catch(function (e) {
+		res.status(400).json(e);
+	});
 });
 
 db.sequelize.sync().then(function() {
