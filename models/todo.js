@@ -6,27 +6,27 @@ module.exports = function(sequelize, DataTypes) {
 			type: DataTypes.STRING,
 			allowNull: false,
 			validate: {
-				len: [1, 50]
+				len: [1, 50],
+				descriptionIsString: function() {
+					if (!_.isString(this.description)) {
+						throw new Error('Description must be string.')
+					}
+				}
 			}
 		},
 		completed: {
 			type: DataTypes.BOOLEAN,
 			allowNull: false,
-			defaultValue: false
-		}
-	}, {
-		validate: {
-			descriptionIsString: function() {
-				if (!_.isString(this.description)) {
-					throw new Error('Description must be string.')
-				}
-			},
-			completedIsBoolean: function() {
-				if(!_.isBoolean(this.completed)) {
-					throw new Error('Completed must be boolean.')
+			defaultValue: false,
+			validate: {
+				completedIsBoolean: function() {
+					if (!_.isBoolean(this.completed)) {
+						throw new Error('Completed must be boolean.')
+					}
 				}
 			}
 		}
+
 
 	});
 };

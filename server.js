@@ -21,7 +21,9 @@ app.get('/', function(req, res) {
 // /todos?completed=true&q=keg
 app.get('/todos', middlewear.requireAuthentication, function(req, res) {
 	var query = req.query;
-	var where = {};
+	var where = {
+		userId: req.user.get('id')
+	};
 
 	if (query.hasOwnProperty('completed') && query.completed === 'true') {
 		where.completed = true;
@@ -43,13 +45,11 @@ app.get('/todos', middlewear.requireAuthentication, function(req, res) {
 
 
 		} else {
-			res.sendStatus(404).json({
-				"Item": "Not found"
-			});
+			res.sendStatus(404).send();
 		}
 
 	}).catch(function(e) {
-		res.sendStatus(500).json(e);
+		res.sendStatus(500).send();
 	});
 
 });
@@ -57,31 +57,37 @@ app.get('/todos', middlewear.requireAuthentication, function(req, res) {
 app.get('/todos/:id', middlewear.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: todoId,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) {
 		if (todo) {
 			res.json(todo.toJSON());
 		} else {
-			res.sendStatus(404).json({
-				"Item": "Not Found"
-			});
+			res.sendStatus(404).send();
 		}
 
 	}).catch(function(e) {
-		res.sendStatus(500).json(e);
+		res.sendStatus(500).send();
 	});
 
 });
 
-app.post('/todos',middlewear.requireAuthentication, function(req, res) {
+app.post('/todos', middlewear.requireAuthentication, function(req, res) {
 	//Pick what data you need not junk data a hacker can indent
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-		//res.json(todo.toJSON());
-		res.sendStatus(201).send();//.json(todo.toJSON());
+		req.user.addTodo(todo).then(function() {
+			return todo.reload();
+		}).then(function() {
+			res.sendStatus(201).send(); //.json(todo.toJSON());
+		});
 
-	}).catch(function(e) {
-		res.sendStatus(400).json(e);
+	}, function (e) {
+		res.sendStatus(400).send();
 	})
 
 });
@@ -91,7 +97,8 @@ app.delete('/todos/:id', middlewear.requireAuthentication, function(req, res) {
 
 	db.todo.destroy({
 		where: {
-			id: todoId
+			id: todoId,
+			userId: req.user.get('id')
 		}
 	}).then(function(dtodo) {
 
@@ -104,7 +111,7 @@ app.delete('/todos/:id', middlewear.requireAuthentication, function(req, res) {
 		}
 
 	}).catch(function(e) {
-		res.sendStatus(500).send(e);
+		res.sendStatus(500).send();
 	})
 
 });
@@ -123,17 +130,21 @@ app.put('/todos/:id', middlewear.requireAuthentication, function(req, res) {
 		attributes.description = body.description;
 	}
 
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: todoId,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) {
 		if (todo) {
 			todo.update(attributes).then(function(todo) {
 				res.json(todo.toJSON());
 			}, function(e) {
-				res.sendStatus(400).json(e);
+				res.sendStatus(400).send();
 			})
 		} else {
-			res.sendStatus(404).json({
-				error: 'data not found'
-			})
+			res.sendStatus(404).send();
+			
 		}
 	}, function() {
 		res.sendStatus(500).send();
@@ -145,9 +156,9 @@ app.post('/users', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
 
 	db.user.create(body).then(function(user) {
-		res.sendStatus(201).send();//json(user.toPublicJSON())
+		res.sendStatus(201).send(); //json(user.toPublicJSON())
 	}).catch(function(e) {
-		res.sendStatus(400).json(e);
+		res.sendStatus(400).send();
 	});
 });
 
