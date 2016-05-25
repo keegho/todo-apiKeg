@@ -165,22 +165,36 @@ app.post('/users', function(req, res) {
 // Login user
 app.post('/users/login', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
+	var userInstance;
 
 	db.user.authenticate(body).then(function(user) {
 		var token = user.generateToken('authentication');
-		if (token) {
-			res.header('Auth', token).json(user.toPublicJSON());
-		} else {
-			res.sendStatus(401).send();
-		}
+		userInstance = user;
+		return db.token.create({
+			token: token
+		});
 
-	}, function() {
+	}).then (function (tokenInstance) {
+
+		res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+
+	}).catch (function(e) {
 		res.sendStatus(401).send();
 	});
 
 });
 
-db.sequelize.sync( /*{force: true}*/ ).then(function() {
+// Logout user "DELETE TOKEN"
+app.delete('/users/login', middlewear.requireAuthentication, function (res, req) {
+
+	req.token.destroy().then(function () {
+		res.sendStatus(204).send();
+	}).catch (function () {
+		res.sendStatus(500).send();
+	});
+});
+
+db.sequelize.sync(/*{force: true}*/ ).then(function() {
 
 	app.listen(port, function() {
 		console.log('Server listeining on port ' + port + '...');
